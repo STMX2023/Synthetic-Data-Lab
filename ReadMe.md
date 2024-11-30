@@ -24,7 +24,7 @@ A modular platform for algorithmic trading strategy development, featuring synth
 
 ## Technology Stack
 
-- **Programming Language**: Python 3.11+
+- **Programming Language**: Python 3.9+
 - **Frontend (UI)**: PySide6, Qt Designer
 - **Data Handling**: Polars
 - **Visualization**: PyQtGraph
