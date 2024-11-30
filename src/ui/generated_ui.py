@@ -3,7 +3,8 @@ from PySide6.QtWidgets import (
     QFormLayout, QLabel, QLineEdit, QPushButton, QSpinBox,
     QComboBox, QGroupBox, QTableView, QDialogButtonBox,
     QTabWidget, QSplitter, QMenuBar, QStatusBar, QToolBar,
-    QMenu, QTextEdit, QPlainTextEdit, QFrame
+    QMenu, QTextEdit, QPlainTextEdit, QFrame, QScrollArea,
+    QDoubleSpinBox
 )
 from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication, QSize
 from PySide6.QtGui import QAction, QFont
@@ -22,50 +23,331 @@ class Ui_MainWindow(object):
         # Main Horizontal Splitter
         self.main_splitter = QSplitter(Qt.Horizontal)
         
-        # Left Panel (Control Panel)
-        self.left_panel = QWidget()
-        self.left_layout = QVBoxLayout(self.left_panel)
+        # Left Panel with Scroll Area
+        self.left_panel = QScrollArea()
+        self.left_panel.setWidgetResizable(True)
+        self.left_panel.setMinimumWidth(250)  # Reduced from default
+        self.left_panel.setMaximumWidth(400)  # Added maximum width
+        self.left_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
-        # Data Controls Group
-        self.data_group = QGroupBox("Data Controls")
-        self.data_layout = QVBoxLayout(self.data_group)
-        
-        self.load_data_btn = QPushButton("Load Data")
-        self.generate_data_btn = QPushButton("Generate Data")
-        self.data_layout.addWidget(self.load_data_btn)
-        self.data_layout.addWidget(self.generate_data_btn)
+        # Create widget for scroll area
+        self.left_widget = QWidget()
+        self.left_layout = QVBoxLayout(self.left_widget)
+        self.left_layout.setContentsMargins(8, 8, 8, 8)
+        self.left_layout.setSpacing(16)  # Increased spacing between groups
         
         # Visualization Controls Group
-        self.viz_group = QGroupBox("Visualization")
-        self.viz_layout = QVBoxLayout(self.viz_group)
+        self.viz_controls_group = QGroupBox("Visualization Controls")
+        self.viz_controls_layout = QVBoxLayout(self.viz_controls_group)
+        self.viz_controls_layout.setSpacing(8)
+        self.viz_controls_layout.setContentsMargins(10, 12, 10, 12)
         
+        # Plot Type Section
+        self.plot_form_layout = QFormLayout()
         self.plot_type_label = QLabel("Plot Type:")
         self.plot_type_combo = QComboBox()
-        self.plot_type_combo.addItems(["Candlestick", "Line", "OHLC"])
-        self.update_plot_btn = QPushButton("Update Plot")
+        self.plot_type_combo.addItems([
+            "Candlestick",
+            "Line",
+            "OHLC",
+            "Area",
+            "Scatter"
+        ])
+        self.plot_type_combo.setMinimumWidth(120)
+        self.plot_form_layout.addRow(self.plot_type_label, self.plot_type_combo)
         
-        self.viz_layout.addWidget(self.plot_type_label)
-        self.viz_layout.addWidget(self.plot_type_combo)
-        self.viz_layout.addWidget(self.update_plot_btn)
+        # Period Selection
+        self.period_label = QLabel("Period:")
+        self.period_combo = QComboBox()
+        self.period_combo.addItems([
+            "Tick",
+            "1 Second",
+            "5 Seconds",
+            "30 Seconds",
+            "1 Minute",
+            "5 Minutes",
+            "15 Minutes",
+            "1 Hour",
+            "4 Hours",
+            "1 Day"
+        ])
+        self.period_combo.setMinimumWidth(120)
+        self.plot_form_layout.addRow(self.period_label, self.period_combo)
         
-        # Backtesting Controls Group
-        self.backtest_group = QGroupBox("Backtesting")
-        self.backtest_layout = QVBoxLayout(self.backtest_group)
+        # Update Plot Button 
+        self.update_plot_btn = QPushButton("Update plot")
+        self.plot_form_layout.addWidget(self.update_plot_btn)
+      
+        # Add all sections to main layout
+        self.viz_controls_layout.addLayout(self.plot_form_layout)
+        self.viz_controls_layout.addSpacing(10)
+        self.viz_controls_layout.addWidget(self.update_plot_btn, 0, Qt.AlignCenter)
+        
+        # Add visualization controls to left panel
+        self.left_layout.addWidget(self.viz_controls_group)
+        self.left_layout.addStretch(1)  # Add stretch to push everything up
+        
+        # Settings Group
+        self.settings_group = QGroupBox("Settings")
+        self.settings_group.setStyleSheet("""
+            QGroupBox {
+                margin-top: 1.5em;
+                padding-top: 0.5em;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 5px;
+            }
+        """)
+        self.left_layout.addSpacing(16)
+        self.settings_layout = QVBoxLayout(self.settings_group)
+        self.settings_layout.setSpacing(8)  # Spacing between elements within groups
+        self.settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
         
         self.period_label = QLabel("Period:")
         self.period_combo = QComboBox()
-        self.period_combo.addItems(["1D", "1W", "1M", "3M", "6M", "1Y"])
-        self.run_backtest_btn = QPushButton("Run Backtest")
+        self.period_combo.addItems([
+            "Tick",
+            "1 Second",
+            "5 Seconds",
+            "30 Seconds",
+            "1 Minute",
+            "5 Minutes",
+            "15 Minutes",
+            "1 Hour",
+            "4 Hours",
+            "1 Day"
+        ])
+        self.period_combo.setMinimumWidth(80)
+        self.period_combo.setMaximumWidth(150)
         
-        self.backtest_layout.addWidget(self.period_label)
-        self.backtest_layout.addWidget(self.period_combo)
-        self.backtest_layout.addWidget(self.run_backtest_btn)
+        self.settings_layout.addWidget(self.period_label)
+        self.settings_layout.addWidget(self.period_combo)
         
-        # Add groups to left panel
-        self.left_layout.addWidget(self.data_group)
-        self.left_layout.addWidget(self.viz_group)
-        self.left_layout.addWidget(self.backtest_group)
+        # Price Settings Group
+        self.price_settings_group = QGroupBox("Price Settings")
+        self.price_settings_layout = QFormLayout(self.price_settings_group)
+        self.price_settings_layout.setSpacing(8)  # Spacing between elements within groups
+        self.price_settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
+        self.price_settings_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        
+        # Price Presets
+        self.price_preset_combo = QComboBox()
+        self.price_preset_combo.addItems([
+            "Custom",
+            "Stable Large Cap",
+            "Volatile Small Cap",
+            "Crypto Bull Market",
+            "Crypto Bear Market",
+            "Range Bound",
+            "Strong Uptrend",
+            "Strong Downtrend",
+            "High Volatility",
+            "Low Volatility",
+            "Mean Reverting",
+            "Flash Crash",
+            "Bubble Formation"
+        ])
+        self.price_preset_combo.setMinimumWidth(80)
+        self.price_preset_combo.setMaximumWidth(150)
+        
+        # Price parameters with more realistic ranges
+        self.initial_price = QDoubleSpinBox()
+        self.initial_price.setRange(0.0001, 1000000.00)  # Support crypto to blue chips
+        self.initial_price.setValue(100.00)
+        self.initial_price.setDecimals(4)
+        self.initial_price.setSingleStep(0.1)
+        self.initial_price.setMinimumWidth(80)
+        self.initial_price.setMaximumWidth(120)
+        
+        self.volatility = QDoubleSpinBox()
+        self.volatility.setRange(0.01, 500.00)  # Support high volatility assets
+        self.volatility.setValue(15.00)  # More typical market volatility
+        self.volatility.setDecimals(2)
+        self.volatility.setSingleStep(0.5)
+        self.volatility.setMinimumWidth(80)
+        self.volatility.setMaximumWidth(120)
+        
+        self.drift = QDoubleSpinBox()
+        self.drift.setRange(-200.00, 200.00)  # Extended for extreme trends
+        self.drift.setValue(0.00)
+        self.drift.setDecimals(2)
+        self.drift.setSingleStep(0.1)
+        self.drift.setMinimumWidth(80)
+        self.drift.setMaximumWidth(120)
+        
+        self.mean_reversion = QDoubleSpinBox()
+        self.mean_reversion.setRange(0.00, 1.00)
+        self.mean_reversion.setValue(0.15)  # Typical mean reversion strength
+        self.mean_reversion.setDecimals(3)
+        self.mean_reversion.setSingleStep(0.01)
+        self.mean_reversion.setMinimumWidth(80)
+        self.mean_reversion.setMaximumWidth(120)
+        
+        # New: Market Regime
+        self.market_regime = QComboBox()
+        self.market_regime.addItems([
+            "Normal",
+            "Bull Market",
+            "Bear Market",
+            "High Volatility",
+            "Low Volatility",
+            "Crisis"
+        ])
+        self.market_regime.setMinimumWidth(80)
+        self.market_regime.setMaximumWidth(150)
+        
+        # New: Price Distribution
+        self.price_distribution = QComboBox()
+        self.price_distribution.addItems([
+            "Normal",
+            "Student-t",
+            "Skewed Normal",
+            "Jump Diffusion",
+            "GARCH"
+        ])
+        self.price_distribution.setMinimumWidth(80)
+        self.price_distribution.setMaximumWidth(150)
+        
+        # New: Gap Settings
+        self.gap_probability = QDoubleSpinBox()
+        self.gap_probability.setRange(0.00, 1.00)
+        self.gap_probability.setValue(0.02)  # 2% chance of gaps
+        self.gap_probability.setDecimals(3)
+        self.gap_probability.setMinimumWidth(80)
+        self.gap_probability.setMaximumWidth(120)
+        
+        self.gap_size = QDoubleSpinBox()
+        self.gap_size.setRange(0.00, 50.00)
+        self.gap_size.setValue(2.00)  # 2% average gap size
+        self.gap_size.setDecimals(2)
+        self.gap_size.setMinimumWidth(80)
+        self.gap_size.setMaximumWidth(120)
+        
+        # Add price parameters to layout
+        self.price_settings_layout.addRow("Preset:", self.price_preset_combo)
+        self.price_settings_layout.addRow("Initial Price:", self.initial_price)
+        self.price_settings_layout.addRow("Volatility (%):", self.volatility)
+        self.price_settings_layout.addRow("Drift (%):", self.drift)
+        self.price_settings_layout.addRow("Mean Reversion:", self.mean_reversion)
+        self.price_settings_layout.addRow("Market Regime:", self.market_regime)
+        self.price_settings_layout.addRow("Distribution:", self.price_distribution)
+        self.price_settings_layout.addRow("Gap Probability:", self.gap_probability)
+        self.price_settings_layout.addRow("Gap Size (%):", self.gap_size)
+        
+        # Volume Settings Group
+        self.volume_settings_group = QGroupBox("Volume Settings")
+        self.volume_settings_layout = QFormLayout(self.volume_settings_group)
+        self.volume_settings_layout.setSpacing(8)  # Spacing between elements within groups
+        self.volume_settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
+        self.volume_settings_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        
+        # Volume Presets
+        self.volume_preset_combo = QComboBox()
+        self.volume_preset_combo.addItems([
+            "Custom",
+            "U-Shape Pattern",
+            "Institutional Trading",
+            "Retail Trading",
+            "Opening Hour",
+            "Closing Hour",
+            "Low Liquidity",
+            "High Liquidity",
+            "News Impact",
+            "Earnings Release",
+            "Market Maker"
+        ])
+        self.volume_preset_combo.setMinimumWidth(80)
+        self.volume_preset_combo.setMaximumWidth(150)
+        
+        # Volume parameters with enhanced ranges
+        self.base_volume = QSpinBox()
+        self.base_volume.setRange(100, 100000000)  # Support higher volume assets
+        self.base_volume.setValue(100000)  # More typical volume
+        self.base_volume.setSingleStep(1000)
+        self.base_volume.setMinimumWidth(80)
+        self.base_volume.setMaximumWidth(120)
+        
+        self.volume_volatility = QDoubleSpinBox()
+        self.volume_volatility.setRange(0.01, 300.00)
+        self.volume_volatility.setValue(40.00)  # Typical volume volatility
+        self.volume_volatility.setDecimals(2)
+        self.volume_volatility.setMinimumWidth(80)
+        self.volume_volatility.setMaximumWidth(120)
+        
+        self.volume_trend = QDoubleSpinBox()
+        self.volume_trend.setRange(-200.00, 200.00)
+        self.volume_trend.setValue(0.00)
+        self.volume_trend.setDecimals(2)
+        self.volume_trend.setMinimumWidth(80)
+        self.volume_trend.setMaximumWidth(120)
+        
+        # Enhanced Volume Patterns
+        self.volume_pattern = QComboBox()
+        self.volume_pattern.addItems([
+            "Normal",
+            "U-Shape (Day)",
+            "W-Shape (Week)",
+            "Monthly Cycle",
+            "Earnings Season",
+            "Custom"
+        ])
+        self.volume_pattern.setMinimumWidth(80)
+        self.volume_pattern.setMaximumWidth(150)
+        
+        # New: Volume Profile
+        self.volume_profile = QComboBox()
+        self.volume_profile.addItems([
+            "Balanced",
+            "Bottom Heavy",
+            "Top Heavy",
+            "Multi-Modal",
+            "Random"
+        ])
+        self.volume_profile.setMinimumWidth(80)
+        self.volume_profile.setMaximumWidth(150)
+        
+        # New: Volume Spike Settings
+        self.spike_probability = QDoubleSpinBox()
+        self.spike_probability.setRange(0.00, 1.00)
+        self.spike_probability.setValue(0.05)  # 5% chance of volume spikes
+        self.spike_probability.setDecimals(3)
+        self.spike_probability.setMinimumWidth(80)
+        self.spike_probability.setMaximumWidth(120)
+        
+        self.spike_multiplier = QDoubleSpinBox()
+        self.spike_multiplier.setRange(1.00, 100.00)
+        self.spike_multiplier.setValue(3.00)  # 3x normal volume
+        self.spike_multiplier.setDecimals(2)
+        self.spike_multiplier.setMinimumWidth(80)
+        self.spike_multiplier.setMaximumWidth(120)
+        
+        # Add volume parameters to layout
+        self.volume_settings_layout.addRow("Preset:", self.volume_preset_combo)
+        self.volume_settings_layout.addRow("Base Volume:", self.base_volume)
+        self.volume_settings_layout.addRow("Volatility (%):", self.volume_volatility)
+        self.volume_settings_layout.addRow("Trend (%):", self.volume_trend)
+        self.volume_settings_layout.addRow("Pattern:", self.volume_pattern)
+        self.volume_settings_layout.addRow("Profile:", self.volume_profile)
+        self.volume_settings_layout.addRow("Spike Probability:", self.spike_probability)
+        self.volume_settings_layout.addRow("Spike Multiplier:", self.spike_multiplier)
+        
+        # Add all groups to left panel with spacing
+        self.left_layout.addWidget(self.settings_group)
+        self.left_layout.addSpacing(20)  # Space between Settings and Price Settings
+        
+        self.left_layout.addWidget(self.price_settings_group)
+        self.left_layout.addSpacing(20)  # Space between Price Settings and Volume Settings
+        
+        self.left_layout.addWidget(self.volume_settings_group)
         self.left_layout.addStretch()
+        
+        # Set the widget for scroll area
+        self.left_panel.setWidget(self.left_widget)
+        
+        # Add scroll area to main splitter
+        self.main_splitter.addWidget(self.left_panel)
         
         # Center Panel (Main Display)
         self.center_panel = QWidget()
@@ -79,34 +361,55 @@ class Ui_MainWindow(object):
         # Add plot area to center panel
         self.center_layout.addWidget(self.plot_area)
         
-        # Right Panel (Control Buttons)
+        # Right Panel with Scroll Area
+        self.right_scroll = QScrollArea()
+        self.right_scroll.setWidgetResizable(True)
+        self.right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.right_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
         self.right_panel = QWidget()
         self.right_layout = QVBoxLayout(self.right_panel)
+        self.right_layout.setContentsMargins(8, 8, 8, 8)
+        self.right_layout.setSpacing(16)  # Increased spacing between groups
         
-        # Control Buttons Group
-        self.control_group = QGroupBox("Controls")
-        self.control_layout = QVBoxLayout(self.control_group)
+        # Data Controls Group
+        self.data_group = QGroupBox("Data Controls")
+        self.data_layout = QVBoxLayout(self.data_group)
+        self.data_layout.setSpacing(8)  # Spacing between elements within groups
+        self.data_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
         
-        # Control Buttons
+        self.load_data_btn = QPushButton("Load Data")
+        self.generate_data_btn = QPushButton("Generate Data")
+        self.data_layout.addWidget(self.load_data_btn)
+        self.data_layout.addWidget(self.generate_data_btn)
+        
+        # Execution Controls Group
+        self.exec_group = QGroupBox("Execution Controls")
+        self.exec_layout = QVBoxLayout(self.exec_group)
+        self.exec_layout.setSpacing(8)  # Spacing between elements within groups
+        self.exec_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
+        
         self.start_btn = QPushButton("Start")
         self.pause_btn = QPushButton("Pause")
         self.stop_btn = QPushButton("Stop")
         self.reset_btn = QPushButton("Reset")
         
-        # Add buttons to control layout
-        self.control_layout.addWidget(self.start_btn)
-        self.control_layout.addWidget(self.pause_btn)
-        self.control_layout.addWidget(self.stop_btn)
-        self.control_layout.addWidget(self.reset_btn)
-        self.control_layout.addStretch()
+        self.exec_layout.addWidget(self.start_btn)
+        self.exec_layout.addWidget(self.pause_btn)
+        self.exec_layout.addWidget(self.stop_btn)
+        self.exec_layout.addWidget(self.reset_btn)
         
-        # Add control group to right panel
-        self.right_layout.addWidget(self.control_group)
+        # Add all groups to right panel
+        self.right_layout.addWidget(self.data_group)
+        self.right_layout.addWidget(self.exec_group)
+        self.right_layout.addStretch()
+        
+        # Set the widget for scroll area
+        self.right_scroll.setWidget(self.right_panel)
         
         # Add panels to main splitter
-        self.main_splitter.addWidget(self.left_panel)
         self.main_splitter.addWidget(self.center_panel)
-        self.main_splitter.addWidget(self.right_panel)
+        self.main_splitter.addWidget(self.right_scroll)
         
         # Set initial sizes for main splitter (20% left, 60% center, 20% right)
         total_width = MainWindow.width()
@@ -168,19 +471,21 @@ class Ui_MainWindow(object):
         self.visualization_output.setPlaceholderText("Visualization output will appear here...")
         self.visualization_layout.addWidget(self.visualization_output)
         
-        # Backtesting Tab
-        self.backtest_tab = QWidget()
-        self.backtest_layout = QVBoxLayout(self.backtest_tab)
-        self.backtest_output = QPlainTextEdit()
-        self.backtest_output.setReadOnly(True)
-        self.backtest_output.setPlaceholderText("Backtesting results will appear here...")
-        self.backtest_layout.addWidget(self.backtest_output)
+        # Stats Tab
+        self.stats_tab = QWidget()
+        self.stats_layout = QVBoxLayout(self.stats_tab)
+        
+        # Results Window
+        self.stats_results = QPlainTextEdit()
+        self.stats_results.setReadOnly(True)
+        self.stats_results.setPlaceholderText("Strategy statistics and performance metrics will appear here...")
+        self.stats_layout.addWidget(self.stats_results)
         
         # Add tabs to editor widget
         self.editor_tab_widget.addTab(self.strategy_editor_tab, "Strategy Editor")
         self.editor_tab_widget.addTab(self.console_tab, "Console")
         self.editor_tab_widget.addTab(self.visualization_tab, "Visualization")
-        self.editor_tab_widget.addTab(self.backtest_tab, "Backtesting")
+        self.editor_tab_widget.addTab(self.stats_tab, "Stats")
         
         # Add editor widget to bottom layout
         self.bottom_layout.addWidget(self.editor_tab_widget)
@@ -240,6 +545,286 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_file.menuAction())
         self.menubar.addAction(self.menu_view.menuAction())
         self.menubar.addAction(self.menu_tools.menuAction())
+
+        # Connect preset signals
+        self.price_preset_combo.currentTextChanged.connect(self.apply_price_preset)
+        self.volume_preset_combo.currentTextChanged.connect(self.apply_volume_preset)
+
+    def apply_price_preset(self, preset):
+        """Apply predefined price settings based on selected preset"""
+        presets = {
+            # Market Behavior Presets
+            "Strong Uptrend": {
+                "initial_price": 25000.0,
+                "volatility": 35.0,        # Moderate volatility for trending market
+                "drift": 85.0,             # Strong positive drift
+                "mean_reversion": 0.05,     # Low mean reversion in trend
+                "market_regime": "Bull Market",
+                "distribution": "Skewed Normal",
+                "gap_probability": 0.03,    # Occasional gaps
+                "gap_size": 2.0            # Moderate gaps
+            },
+            "Strong Downtrend": {
+                "initial_price": 25000.0,
+                "volatility": 45.0,        # Higher volatility in downtrends
+                "drift": -75.0,            # Strong negative drift
+                "mean_reversion": 0.05,     # Low mean reversion in trend
+                "market_regime": "Bear Market",
+                "distribution": "Skewed Normal",
+                "gap_probability": 0.05,    # More frequent gaps in downtrends
+                "gap_size": 2.5            # Slightly larger gaps
+            },
+            "High Volatility": {
+                "initial_price": 25000.0,
+                "volatility": 75.0,        # High volatility
+                "drift": 0.0,              # No directional bias
+                "mean_reversion": 0.08,     # Low mean reversion
+                "market_regime": "High Volatility",
+                "distribution": "Student-t",
+                "gap_probability": 0.08,    # Frequent gaps
+                "gap_size": 3.5            # Large gaps
+            },
+            "Low Volatility": {
+                "initial_price": 25000.0,
+                "volatility": 8.0,         # Very low volatility
+                "drift": 4.0,              # Slight upward drift
+                "mean_reversion": 0.20,     # Higher mean reversion
+                "market_regime": "Low Volatility",
+                "distribution": "Normal",
+                "gap_probability": 0.01,    # Very rare gaps
+                "gap_size": 0.5            # Small gaps
+            },
+            "Mean Reverting": {
+                "initial_price": 25000.0,
+                "volatility": 25.0,        # Moderate volatility
+                "drift": 0.0,              # No drift
+                "mean_reversion": 0.40,     # Strong mean reversion
+                "market_regime": "Normal",
+                "distribution": "Normal",
+                "gap_probability": 0.02,    # Rare gaps
+                "gap_size": 1.0            # Small gaps
+            },
+            "Flash Crash": {
+                "initial_price": 25000.0,
+                "volatility": 150.0,       # Extreme volatility
+                "drift": -200.0,           # Severe downward drift
+                "mean_reversion": 0.02,     # Almost no mean reversion
+                "market_regime": "Crisis",
+                "distribution": "Jump Diffusion",
+                "gap_probability": 0.25,    # Very frequent gaps
+                "gap_size": 8.0            # Very large gaps
+            },
+            "Bubble Formation": {
+                "initial_price": 25000.0,
+                "volatility": 65.0,        # High volatility
+                "drift": 150.0,            # Extreme upward drift
+                "mean_reversion": 0.03,     # Very low mean reversion
+                "market_regime": "Bull Market",
+                "distribution": "Student-t",
+                "gap_probability": 0.10,    # Frequent gaps
+                "gap_size": 4.0            # Large gaps
+            },
+            "Range Bound": {
+                "initial_price": 25000.0,
+                "volatility": 15.0,        # Low volatility
+                "drift": 0.0,              # No drift
+                "mean_reversion": 0.35,     # Strong mean reversion
+                "market_regime": "Normal",
+                "distribution": "Normal",
+                "gap_probability": 0.02,    # Rare gaps
+                "gap_size": 1.0            # Small gaps
+            },
+            "News Event": {
+                "initial_price": 25000.0,
+                "volatility": 55.0,        # High volatility
+                "drift": 0.0,              # No directional bias
+                "mean_reversion": 0.10,     # Low mean reversion
+                "market_regime": "High Volatility",
+                "distribution": "Jump Diffusion",
+                "gap_probability": 0.15,    # Frequent gaps
+                "gap_size": 5.0            # Large gaps
+            },
+            # Asset Type Presets
+            "Stable Large Cap": {
+                "initial_price": 150.0,
+                "volatility": 12.0,        # Low volatility
+                "drift": 8.0,              # Moderate upward drift
+                "mean_reversion": 0.15,     # Moderate mean reversion
+                "market_regime": "Normal",
+                "distribution": "Normal",
+                "gap_probability": 0.01,    # Very rare gaps
+                "gap_size": 0.8            # Small gaps
+            },
+            "Volatile Small Cap": {
+                "initial_price": 25.0,
+                "volatility": 45.0,        # High volatility
+                "drift": 15.0,             # Strong growth potential
+                "mean_reversion": 0.08,     # Low mean reversion
+                "market_regime": "High Volatility",
+                "distribution": "Student-t",
+                "gap_probability": 0.05,    # Moderate gap frequency
+                "gap_size": 3.5            # Large gaps
+            }
+        }
+        
+        if preset != "Custom" and preset in presets:
+            settings = presets[preset]
+            # Block signals to prevent feedback loops
+            self.initial_price.blockSignals(True)
+            self.volatility.blockSignals(True)
+            self.drift.blockSignals(True)
+            self.mean_reversion.blockSignals(True)
+            self.market_regime.blockSignals(True)
+            self.price_distribution.blockSignals(True)
+            self.gap_probability.blockSignals(True)
+            self.gap_size.blockSignals(True)
+            
+            try:
+                # Apply settings
+                self.initial_price.setValue(settings["initial_price"])
+                self.volatility.setValue(settings["volatility"])
+                self.drift.setValue(settings["drift"])
+                self.mean_reversion.setValue(settings["mean_reversion"])
+                self.market_regime.setCurrentText(settings["market_regime"])
+                self.price_distribution.setCurrentText(settings["distribution"])
+                self.gap_probability.setValue(settings["gap_probability"])
+                self.gap_size.setValue(settings["gap_size"])
+            finally:
+                # Always unblock signals
+                self.initial_price.blockSignals(False)
+                self.volatility.blockSignals(False)
+                self.drift.blockSignals(False)
+                self.mean_reversion.blockSignals(False)
+                self.market_regime.blockSignals(False)
+                self.price_distribution.blockSignals(False)
+                self.gap_probability.blockSignals(False)
+                self.gap_size.blockSignals(False)
+
+    def apply_volume_preset(self, preset):
+        """Apply predefined volume settings based on selected preset"""
+        presets = {
+            # Standard Market Patterns
+            "U-Shape Pattern": {
+                "base_volume": 1500000,     # Moderate base volume
+                "volatility": 35.0,         # Moderate volatility
+                "trend": 0.0,               # No trend
+                "pattern": "U-Shape (Day)",  # Classic U-shaped pattern
+                "profile": "Balanced",       # Even buy/sell distribution
+                "spike_probability": 0.03,   # Occasional spikes
+                "spike_multiplier": 2.0      # Moderate spike size
+            },
+            "Institutional Trading": {
+                "base_volume": 3500000,     # High base volume
+                "volatility": 45.0,         # Moderate-high volatility
+                "trend": 10.0,              # Slight upward trend
+                "pattern": "Block Trading",  # Large block trades
+                "profile": "Top Heavy",      # More buying pressure
+                "spike_probability": 0.08,   # Regular block trades
+                "spike_multiplier": 4.0      # Large blocks
+            },
+            "Retail Trading": {
+                "base_volume": 800000,      # Lower base volume
+                "volatility": 55.0,         # Higher volatility
+                "trend": 0.0,               # No clear trend
+                "pattern": "Random",         # Random retail flow
+                "profile": "Multi-Modal",    # Multiple trading waves
+                "spike_probability": 0.05,   # Moderate spikes
+                "spike_multiplier": 2.5      # Smaller spikes
+            },
+            "Opening Hour": {
+                "base_volume": 2500000,     # High opening volume
+                "volatility": 65.0,         # High volatility
+                "trend": 25.0,              # Strong initial surge
+                "pattern": "Front Loaded",   # Heavy opening volume
+                "profile": "Multi-Modal",    # Multiple opening waves
+                "spike_probability": 0.15,   # Frequent spikes
+                "spike_multiplier": 3.0      # Significant spikes
+            },
+            "Closing Hour": {
+                "base_volume": 2800000,     # High closing volume
+                "volatility": 60.0,         # High volatility
+                "trend": 35.0,              # Increasing into close
+                "pattern": "Back Loaded",    # Heavy closing volume
+                "profile": "Multi-Modal",    # Multiple closing waves
+                "spike_probability": 0.12,   # Regular spikes
+                "spike_multiplier": 3.5      # Large spikes
+            },
+            "Low Liquidity": {
+                "base_volume": 150000,      # Very low base volume
+                "volatility": 85.0,         # Very high volatility
+                "trend": -15.0,             # Declining trend
+                "pattern": "Random",         # Sporadic trading
+                "profile": "Bottom Heavy",   # More selling pressure
+                "spike_probability": 0.04,   # Rare but impactful spikes
+                "spike_multiplier": 5.0      # Very large spikes when they occur
+            },
+            "High Liquidity": {
+                "base_volume": 5000000,     # Very high base volume
+                "volatility": 25.0,         # Lower volatility
+                "trend": 5.0,               # Slight upward trend
+                "pattern": "U-Shape (Day)",  # Classic pattern
+                "profile": "Balanced",       # Even distribution
+                "spike_probability": 0.10,   # Regular small spikes
+                "spike_multiplier": 1.8      # Small spikes
+            },
+            "News Impact": {
+                "base_volume": 4000000,     # High news-driven volume
+                "volatility": 95.0,         # Very high volatility
+                "trend": 50.0,              # Strong volume surge
+                "pattern": "Random",         # Unpredictable flow
+                "profile": "Multi-Modal",    # Multiple volume waves
+                "spike_probability": 0.20,   # Very frequent spikes
+                "spike_multiplier": 4.5      # Large spikes
+            },
+            "Earnings Release": {
+                "base_volume": 4500000,     # Very high event volume
+                "volatility": 100.0,        # Extreme volatility
+                "trend": 65.0,              # Strong volume increase
+                "pattern": "Front Loaded",   # Heavy initial volume
+                "profile": "Multi-Modal",    # Multiple waves
+                "spike_probability": 0.25,   # Very frequent spikes
+                "spike_multiplier": 5.0      # Very large spikes
+            },
+            "Market Maker": {
+                "base_volume": 2000000,     # Steady base volume
+                "volatility": 20.0,         # Low volatility
+                "trend": 0.0,               # No trend
+                "pattern": "U-Shape (Day)",  # Standard pattern
+                "profile": "Balanced",       # Market making balance
+                "spike_probability": 0.06,   # Regular small spikes
+                "spike_multiplier": 1.5      # Small, controlled spikes
+            }
+        }
+        
+        if preset != "Custom" and preset in presets:
+            settings = presets[preset]
+            # Block signals to prevent feedback loops
+            self.base_volume.blockSignals(True)
+            self.volume_volatility.blockSignals(True)
+            self.volume_trend.blockSignals(True)
+            self.volume_pattern.blockSignals(True)
+            self.volume_profile.blockSignals(True)
+            self.spike_probability.blockSignals(True)
+            self.spike_multiplier.blockSignals(True)
+            
+            try:
+                # Apply settings
+                self.base_volume.setValue(settings["base_volume"])
+                self.volume_volatility.setValue(settings["volatility"])
+                self.volume_trend.setValue(settings["trend"])
+                self.volume_pattern.setCurrentText(settings["pattern"])
+                self.volume_profile.setCurrentText(settings["profile"])
+                self.spike_probability.setValue(settings["spike_probability"])
+                self.spike_multiplier.setValue(settings["spike_multiplier"])
+            finally:
+                # Always unblock signals
+                self.base_volume.blockSignals(False)
+                self.volume_volatility.blockSignals(False)
+                self.volume_trend.blockSignals(False)
+                self.volume_pattern.blockSignals(False)
+                self.volume_profile.blockSignals(False)
+                self.spike_probability.blockSignals(False)
+                self.spike_multiplier.blockSignals(False)
 
 class Ui_LoadDataDialog(object):
     def setupUi(self, LoadDataDialog):
