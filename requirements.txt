@@ -1,0 +1,15 @@
+# requirements.txt
+
+PySide6
+polars
+pyqtgraph
+numpy
+jax
+jaxlib
+pygments
+ipython
+scipy
+matplotlib
+pandas
+scikit-learn
+
