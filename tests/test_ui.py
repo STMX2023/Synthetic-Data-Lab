@@ -14,9 +14,9 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         
         # Connect signals
-        self.ui.load_data_btn.clicked.connect(self.show_load_dialog)
-        self.ui.action_settings.triggered.connect(self.show_settings_dialog)
-        self.ui.action_exit.triggered.connect(self.close)
+        # self.ui.load_data_btn.clicked.connect(self.show_load_dialog)
+        # self.ui.action_settings.triggered.connect(self.show_settings_dialog)
+        # self.ui.action_exit.triggered.connect(self.close)
     
     def show_load_dialog(self):
         dialog = QDialog(self)

@@ -4,21 +4,42 @@ from PySide6.QtWidgets import (
     QComboBox, QGroupBox, QTableView, QDialogButtonBox,
     QTabWidget, QSplitter, QMenuBar, QStatusBar, QToolBar,
     QMenu, QTextEdit, QPlainTextEdit, QFrame, QScrollArea,
-    QDoubleSpinBox
+    QDoubleSpinBox, QMessageBox
 )
-from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication, QSize
-from PySide6.QtGui import QAction, QFont
+from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication, QSize, QPoint
+from PySide6.QtGui import QAction, QFont, QColor, QPalette, QScreen
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1200, 800)
+        # Get the primary screen and its geometry
+        screen = MainWindow.screen()
+        screen_geometry = screen.availableGeometry()
+        # Set window size to 100% of screen size
+        window_width = int(screen_geometry.width() * 1)
+        window_height = int(screen_geometry.height() * 1)
+        MainWindow.resize(window_width, window_height)
+        # Center the window on screen
+        center_point = screen_geometry.center()
+        MainWindow.setGeometry(
+            center_point.x() - window_width // 2,
+            center_point.y() - window_height // 2,
+            window_width,
+            window_height
+        )
         MainWindow.setWindowTitle("Synthetic Data Lab")
+        
+        # Store MainWindow reference
+        self.main_window = MainWindow
         
         # Central Widget
         self.centralwidget = QWidget(MainWindow)
+        MainWindow.setCentralWidget(self.centralwidget)  # Set central widget immediately
         self.main_layout = QVBoxLayout(self.centralwidget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)  # Remove all margins
+        self.main_layout.setSpacing(0)  # Remove spacing between widgets
         
         # Main Horizontal Splitter
         self.main_splitter = QSplitter(Qt.Horizontal)
@@ -29,7 +50,7 @@ class Ui_MainWindow(object):
         self.left_scroll.setObjectName("leftPanel")
         
         self.left_scroll.setMinimumWidth(250)  # Reduced from default
-        self.left_scroll.setMaximumWidth(400)  # Added maximum width
+        self.left_scroll.setMaximumWidth(250)  # Added maximum width
         self.left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
         # Create widget for scroll area
@@ -38,12 +59,21 @@ class Ui_MainWindow(object):
         self.left_layout = QVBoxLayout(self.left_widget)
         self.left_layout.setContentsMargins(14, 14, 14, 14)
         self.left_layout.setSpacing(24)  # Increased spacing between groups
-        
+
+        # Theme Selector
+        self.theme_selector = QComboBox()
+            
+        self.theme_selector.addItems(["Light", "Dark"])
+        self.theme_selector.setMinimumWidth(80)
+        self.theme_selector.setMaximumWidth(80)
+        self.theme_selector.setCurrentIndex(0)
+        self.left_layout.addWidget(self.theme_selector)
+
         # Visualization Controls Group
         self.viz_controls_group = QGroupBox("Visualization Controls")
         self.viz_controls_group.setStyleSheet("""
             QGroupBox {
-                margin-top: 2em;
+                margin-top: 1em;
                 padding-top: 0.5em;
             }       
             QGroupBox::title {
@@ -89,14 +119,10 @@ class Ui_MainWindow(object):
         ])
         self.period_combo.setMinimumWidth(120)
         self.plot_form_layout.addRow(self.period_label, self.period_combo)
-        
-        # Update Plot Button 
-        self.update_plot_btn = QPushButton("Update plot")
-        self.plot_form_layout.addWidget(self.update_plot_btn)
       
         # Add all sections to main layout
         self.viz_controls_layout.addLayout(self.plot_form_layout)
-        self.viz_controls_layout.addWidget(self.update_plot_btn, 0, Qt.AlignCenter)
+        
         
         # Add visualization controls to left panel
         self.left_layout.addWidget(self.viz_controls_group)
@@ -347,15 +373,7 @@ class Ui_MainWindow(object):
         # Center Panel (Main Display)
         self.center_panel = QWidget()
         self.center_panel.setObjectName("centerPanel")
-        self.center_panel.setStyleSheet("""
-            #centerPanel {
-                border: 1px solid #800080;
-                border-radius: 4px;
-                background-color: transparent;
-            }
-        """)
         self.center_layout = QVBoxLayout(self.center_panel)
-       
         
         # Plot Area
         self.plot_area = QFrame()
@@ -379,84 +397,77 @@ class Ui_MainWindow(object):
         self.right_layout = QVBoxLayout(self.right_panel)
         self.right_layout.setContentsMargins(14, 14, 14, 14)
         self.right_layout.setSpacing(24)  # Increased spacing between groups
-        
-        # Data Controls Group
-        self.data_group = QGroupBox("Data Controls")
-        self.data_group.setStyleSheet("""
-            QGroupBox {
-                margin-top: 2em;
-                padding-top: 0.1em;
-            }       
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top center;
-                margin-top: 0.5em;
-            }
-        """)
-        self.data_layout = QVBoxLayout(self.data_group)
-        self.data_layout.setSpacing(8)  # Spacing between elements within groups
-        self.data_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
-        
-        self.load_data_btn = QPushButton("Load Data")
-        self.generate_data_btn = QPushButton("Generate Data")
-        self.data_layout.addWidget(self.load_data_btn)
-        self.data_layout.addWidget(self.generate_data_btn)
 
-        # Execution Controls Group
-        self.exec_group = QGroupBox("Execution Controls")
-        self.exec_group.setStyleSheet("""
-            QGroupBox {
-                margin-top: 2em;
-                padding-top: 0.5em;
-            }       
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top center;
-                margin-top: 0.5em;
-            }
-        """)
+        # Infinite Data Run Group
+        self.exec_group = QGroupBox("Infinite Data Run")
         
         self.exec_layout = QVBoxLayout(self.exec_group)
-        self.exec_layout.setSpacing(8)  # Spacing between elements within groups
-        self.exec_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
+        self.exec_layout.setSpacing(10)  # Spacing between elements within groups
+        self.exec_layout.setContentsMargins(1, 1, 1, 12)  # Increased internal padding
         
         self.start_btn = QPushButton("Start")
+        self.start_btn.setMaximumWidth(120)
         self.pause_btn = QPushButton("Pause")
+        self.pause_btn.setMaximumWidth(120)
         self.stop_btn = QPushButton("Stop")
+        self.stop_btn.setMaximumWidth(120)
         self.reset_btn = QPushButton("Reset")
+        self.reset_btn.setMaximumWidth(120)
+        
+        self.exec_layout.setAlignment(Qt.AlignCenter)
         
         self.exec_layout.addWidget(self.start_btn)
         self.exec_layout.addWidget(self.pause_btn)
         self.exec_layout.addWidget(self.stop_btn)
         self.exec_layout.addWidget(self.reset_btn)
 
-        # Infinite Data Run Group
-        self.infinite_data_group = QGroupBox("Infinite Data Run")
-        self.infinite_data_group.setStyleSheet("""
-            QGroupBox {
-                margin-top: 2em;
-                padding-top: 0.1em;
-            }       
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top center;
-                margin-top: 0.5em;
-            }
-        """)
+        # Live streaming Group
+        self.live_streaming_group = QGroupBox("Live Streaming")
         
-        self.infinite_data_layout = QVBoxLayout(self.infinite_data_group)
-        self.infinite_data_layout.setSpacing(8)  # Spacing between elements within groups
-        self.infinite_data_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
+        self.live_streaming_group_layout = QVBoxLayout(self.live_streaming_group)
+        self.live_streaming_group_layout.setSpacing(10)  # Spacing between elements within groups
+        self.live_streaming_group_layout.setContentsMargins(1, 1, 1, 12)  # Increased internal padding
         
-        self.infinite_run_btn = QPushButton("Infinite Run")
-        self.stop_run_btn = QPushButton("Stop Run")
-        self.infinite_data_layout.addWidget(self.infinite_run_btn)
-        self.infinite_data_layout.addWidget(self.stop_run_btn)
+        self.start_data_stream_btn = QPushButton("Start Data Stream")
+        self.start_data_stream_btn.setMaximumWidth(150)
+        self.start_data_stream_btn.clicked.connect(self.show_stream_connection_dialog)
+        self.start_data_stream_btn.setObjectName("startDataStreamBtn")
+        self.stop_data_stream_btn = QPushButton("Stop Data Stream")
+        self.stop_data_stream_btn.setMaximumWidth(150)
+        self.stop_data_stream_btn.setEnabled(False)
+        self.live_streaming_group_layout.addWidget(self.start_data_stream_btn)
+        self.live_streaming_group_layout.addWidget(self.stop_data_stream_btn)
+
+        # Center button alignment
+        self.live_streaming_group_layout.setAlignment(Qt.AlignCenter)
+
+        # Data Controls Group
+        self.data_group = QGroupBox("Static Data")
+
+        self.data_layout = QVBoxLayout(self.data_group)
+        self.data_layout.setSpacing(10)  # Spacing between elements within groups
+        self.data_layout.setContentsMargins(1, 1, 1, 12 )  # Increased internal padding
+        
+        self.load_data_btn = QPushButton("Load Data")
+        self.load_data_btn.setMaximumWidth(150)
+        self.generate_data_btn = QPushButton("Generate Data")
+        self.generate_data_btn.setMaximumWidth(150)
+        self.save_data_btn = QPushButton("Save Data")
+        self.save_data_btn.setMaximumWidth(150)
+        self.data_layout.addWidget(self.load_data_btn)
+        self.data_layout.addWidget(self.generate_data_btn)
+        self.data_layout.addWidget(self.save_data_btn)
+
+        self.data_layout.setAlignment(Qt.AlignCenter)
+
+        self.data_layout.addWidget(self.load_data_btn)
+        self.data_layout.addWidget(self.generate_data_btn)
+        self.data_layout.addWidget(self.save_data_btn)
         
         # Add all groups to right panel
-        self.right_layout.addWidget(self.data_group)
         self.right_layout.addWidget(self.exec_group)
-        self.right_layout.addWidget(self.infinite_data_group)
+        self.right_layout.addWidget(self.live_streaming_group)
+        self.right_layout.addWidget(self.data_group)
         self.right_layout.addStretch()
         
         # Set the widget for scroll area
@@ -559,13 +570,10 @@ class Ui_MainWindow(object):
         
         # Add vertical splitter to main layout
         self.main_layout.addWidget(self.vertical_splitter)
-        
-        # Set central widget
-        MainWindow.setCentralWidget(self.centralwidget)
-        
+
         # Menu Bar
         self.menubar = QMenuBar(MainWindow)
-        self.menubar.setGeometry(QRect(0, 0, 1200, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1200, 30))
         
         self.menu_file = QMenu("File", self.menubar)
         self.menu_view = QMenu("View", self.menubar)
@@ -880,6 +888,77 @@ class Ui_MainWindow(object):
                 self.volume_profile.blockSignals(False)
                 self.spike_probability.blockSignals(False)
                 self.spike_multiplier.blockSignals(False)
+
+    def show_stream_connection_dialog(self):
+        dialog = StreamConnectionDialog(self.main_window)
+        if dialog.exec_() == QDialog.Accepted:
+            # Connection was successful
+            self.start_data_stream_btn.setEnabled(False)
+            self.start_data_stream_btn.setText("Connected")
+            # Enable the stop button
+            self.stop_data_stream_btn.setEnabled(True)
+
+
+class StreamConnectionDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Stream Connection Settings")
+        self.setModal(True)
+        self.resize(400, 300)
+
+        # Create layout
+        layout = QVBoxLayout(self)
+        form_layout = QFormLayout()
+
+        # Create input fields
+        self.exchange_combo = QComboBox()
+        self.exchange_combo.addItems(["Binance", "Coinbase", "Kraken", "Bitfinex"])
+        
+        self.api_key = QLineEdit()
+        self.api_key.setEchoMode(QLineEdit.Password)
+        self.api_secret = QLineEdit()
+        self.api_secret.setEchoMode(QLineEdit.Password)
+        
+        self.symbol_input = QLineEdit()
+        self.symbol_input.setPlaceholderText("e.g., BTC/USD")
+        
+        # Add fields to form layout
+        form_layout.addRow("Exchange:", self.exchange_combo)
+        form_layout.addRow("API Key:", self.api_key)
+        form_layout.addRow("API Secret:", self.api_secret)
+        form_layout.addRow("Trading Pair:", self.symbol_input)
+        
+        # Add form to main layout
+        layout.addLayout(form_layout)
+        
+        # Status label
+        self.status_label = QLabel("")
+        self.status_label.setStyleSheet("QLabel { color: red; }")
+        layout.addWidget(self.status_label)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        self.connect_button = QPushButton("Connect")
+        self.connect_button.clicked.connect(self.try_connect)
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.reject)
+        
+        button_layout.addWidget(self.connect_button)
+        button_layout.addWidget(self.cancel_button)
+        layout.addLayout(button_layout)
+
+    def try_connect(self):
+        # Validate inputs
+        if not self.api_key.text() or not self.api_secret.text() or not self.symbol_input.text():
+            self.status_label.setText("Please fill in all fields")
+            return
+            
+        # Here you would implement the actual connection logic
+        # For now, we'll just show a success message
+        self.status_label.setStyleSheet("QLabel { color: green; }")
+        self.status_label.setText("Connected successfully!")
+        self.accept()
+
 
 class Ui_LoadDataDialog(object):
     def setupUi(self, LoadDataDialog):
