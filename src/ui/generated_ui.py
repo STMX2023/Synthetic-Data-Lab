@@ -24,20 +24,34 @@ class Ui_MainWindow(object):
         self.main_splitter = QSplitter(Qt.Horizontal)
         
         # Left Panel with Scroll Area
-        self.left_panel = QScrollArea()
-        self.left_panel.setWidgetResizable(True)
-        self.left_panel.setMinimumWidth(250)  # Reduced from default
-        self.left_panel.setMaximumWidth(400)  # Added maximum width
-        self.left_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.left_scroll = QScrollArea()
+        self.left_scroll.setWidgetResizable(True)
+        self.left_scroll.setObjectName("leftPanel")
+        
+        self.left_scroll.setMinimumWidth(250)  # Reduced from default
+        self.left_scroll.setMaximumWidth(400)  # Added maximum width
+        self.left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
         # Create widget for scroll area
         self.left_widget = QWidget()
+        self.left_widget.setObjectName("leftWidget")
         self.left_layout = QVBoxLayout(self.left_widget)
-        self.left_layout.setContentsMargins(8, 8, 8, 8)
-        self.left_layout.setSpacing(16)  # Increased spacing between groups
+        self.left_layout.setContentsMargins(14, 14, 14, 14)
+        self.left_layout.setSpacing(24)  # Increased spacing between groups
         
         # Visualization Controls Group
         self.viz_controls_group = QGroupBox("Visualization Controls")
+        self.viz_controls_group.setStyleSheet("""
+            QGroupBox {
+                margin-top: 2em;
+                padding-top: 0.5em;
+            }       
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                margin-top: 0.5em;
+            }
+        """)
         self.viz_controls_layout = QVBoxLayout(self.viz_controls_group)
         self.viz_controls_layout.setSpacing(8)
         self.viz_controls_layout.setContentsMargins(10, 12, 10, 12)
@@ -51,7 +65,9 @@ class Ui_MainWindow(object):
             "Line",
             "OHLC",
             "Area",
-            "Scatter"
+            "Scatter",
+            "Dollar bar",
+            "Volume bar"
         ])
         self.plot_type_combo.setMinimumWidth(120)
         self.plot_form_layout.addRow(self.plot_type_label, self.plot_type_combo)
@@ -80,53 +96,25 @@ class Ui_MainWindow(object):
       
         # Add all sections to main layout
         self.viz_controls_layout.addLayout(self.plot_form_layout)
-        self.viz_controls_layout.addSpacing(10)
         self.viz_controls_layout.addWidget(self.update_plot_btn, 0, Qt.AlignCenter)
         
         # Add visualization controls to left panel
         self.left_layout.addWidget(self.viz_controls_group)
         self.left_layout.addStretch(1)  # Add stretch to push everything up
         
-        # Settings Group
-        self.settings_group = QGroupBox("Settings")
-        self.settings_group.setStyleSheet("""
+        # Price Settings Group
+        self.price_settings_group = QGroupBox("Price Settings")
+        self.price_settings_group.setStyleSheet("""
             QGroupBox {
-                margin-top: 1.5em;
+                margin-top: 2em;
                 padding-top: 0.5em;
-            }
+            }       
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top center;
-                padding: 0 5px;
+                margin-top: 0.5em;
             }
         """)
-        self.left_layout.addSpacing(16)
-        self.settings_layout = QVBoxLayout(self.settings_group)
-        self.settings_layout.setSpacing(8)  # Spacing between elements within groups
-        self.settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
-        
-        self.period_label = QLabel("Period:")
-        self.period_combo = QComboBox()
-        self.period_combo.addItems([
-            "Tick",
-            "1 Second",
-            "5 Seconds",
-            "30 Seconds",
-            "1 Minute",
-            "5 Minutes",
-            "15 Minutes",
-            "1 Hour",
-            "4 Hours",
-            "1 Day"
-        ])
-        self.period_combo.setMinimumWidth(80)
-        self.period_combo.setMaximumWidth(150)
-        
-        self.settings_layout.addWidget(self.period_label)
-        self.settings_layout.addWidget(self.period_combo)
-        
-        # Price Settings Group
-        self.price_settings_group = QGroupBox("Price Settings")
         self.price_settings_layout = QFormLayout(self.price_settings_group)
         self.price_settings_layout.setSpacing(8)  # Spacing between elements within groups
         self.price_settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
@@ -238,6 +226,17 @@ class Ui_MainWindow(object):
         
         # Volume Settings Group
         self.volume_settings_group = QGroupBox("Volume Settings")
+        self.volume_settings_group.setStyleSheet("""
+            QGroupBox {
+                margin-top: 2em;
+                padding-top: 0.5em;
+            }       
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                margin-top: 0.5em;
+            }
+        """)
         self.volume_settings_layout = QFormLayout(self.volume_settings_group)
         self.volume_settings_layout.setSpacing(8)  # Spacing between elements within groups
         self.volume_settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
@@ -333,25 +332,30 @@ class Ui_MainWindow(object):
         self.volume_settings_layout.addRow("Spike Probability:", self.spike_probability)
         self.volume_settings_layout.addRow("Spike Multiplier:", self.spike_multiplier)
         
-        # Add all groups to left panel with spacing
-        self.left_layout.addWidget(self.settings_group)
-        self.left_layout.addSpacing(20)  # Space between Settings and Price Settings
         
         self.left_layout.addWidget(self.price_settings_group)
-        self.left_layout.addSpacing(20)  # Space between Price Settings and Volume Settings
         
         self.left_layout.addWidget(self.volume_settings_group)
         self.left_layout.addStretch()
         
         # Set the widget for scroll area
-        self.left_panel.setWidget(self.left_widget)
+        self.left_scroll.setWidget(self.left_widget)
         
         # Add scroll area to main splitter
-        self.main_splitter.addWidget(self.left_panel)
+        self.main_splitter.addWidget(self.left_scroll)
         
         # Center Panel (Main Display)
         self.center_panel = QWidget()
+        self.center_panel.setObjectName("centerPanel")
+        self.center_panel.setStyleSheet("""
+            #centerPanel {
+                border: 1px solid #800080;
+                border-radius: 4px;
+                background-color: transparent;
+            }
+        """)
         self.center_layout = QVBoxLayout(self.center_panel)
+       
         
         # Plot Area
         self.plot_area = QFrame()
@@ -364,16 +368,31 @@ class Ui_MainWindow(object):
         # Right Panel with Scroll Area
         self.right_scroll = QScrollArea()
         self.right_scroll.setWidgetResizable(True)
+        self.right_scroll.setObjectName("rightPanel")
+    
+        self.right_scroll.setMinimumWidth(200)  # Reduced from default
+        self.right_scroll.setMaximumWidth(300)  # Added maximum width
         self.right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.right_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         
+        # Create widget for scroll area
         self.right_panel = QWidget()
         self.right_layout = QVBoxLayout(self.right_panel)
-        self.right_layout.setContentsMargins(8, 8, 8, 8)
-        self.right_layout.setSpacing(16)  # Increased spacing between groups
+        self.right_layout.setContentsMargins(14, 14, 14, 14)
+        self.right_layout.setSpacing(24)  # Increased spacing between groups
         
         # Data Controls Group
         self.data_group = QGroupBox("Data Controls")
+        self.data_group.setStyleSheet("""
+            QGroupBox {
+                margin-top: 2em;
+                padding-top: 0.1em;
+            }       
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                margin-top: 0.5em;
+            }
+        """)
         self.data_layout = QVBoxLayout(self.data_group)
         self.data_layout.setSpacing(8)  # Spacing between elements within groups
         self.data_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
@@ -382,9 +401,21 @@ class Ui_MainWindow(object):
         self.generate_data_btn = QPushButton("Generate Data")
         self.data_layout.addWidget(self.load_data_btn)
         self.data_layout.addWidget(self.generate_data_btn)
-        
+
         # Execution Controls Group
         self.exec_group = QGroupBox("Execution Controls")
+        self.exec_group.setStyleSheet("""
+            QGroupBox {
+                margin-top: 2em;
+                padding-top: 0.5em;
+            }       
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                margin-top: 0.5em;
+            }
+        """)
+        
         self.exec_layout = QVBoxLayout(self.exec_group)
         self.exec_layout.setSpacing(8)  # Spacing between elements within groups
         self.exec_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
@@ -398,10 +429,34 @@ class Ui_MainWindow(object):
         self.exec_layout.addWidget(self.pause_btn)
         self.exec_layout.addWidget(self.stop_btn)
         self.exec_layout.addWidget(self.reset_btn)
+
+        # Infinite Data Run Group
+        self.infinite_data_group = QGroupBox("Infinite Data Run")
+        self.infinite_data_group.setStyleSheet("""
+            QGroupBox {
+                margin-top: 2em;
+                padding-top: 0.1em;
+            }       
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                margin-top: 0.5em;
+            }
+        """)
+        
+        self.infinite_data_layout = QVBoxLayout(self.infinite_data_group)
+        self.infinite_data_layout.setSpacing(8)  # Spacing between elements within groups
+        self.infinite_data_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
+        
+        self.infinite_run_btn = QPushButton("Infinite Run")
+        self.stop_run_btn = QPushButton("Stop Run")
+        self.infinite_data_layout.addWidget(self.infinite_run_btn)
+        self.infinite_data_layout.addWidget(self.stop_run_btn)
         
         # Add all groups to right panel
         self.right_layout.addWidget(self.data_group)
         self.right_layout.addWidget(self.exec_group)
+        self.right_layout.addWidget(self.infinite_data_group)
         self.right_layout.addStretch()
         
         # Set the widget for scroll area
