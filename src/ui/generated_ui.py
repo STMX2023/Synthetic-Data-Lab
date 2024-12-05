@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QMenu, QTextEdit, QPlainTextEdit, QFrame, QScrollArea,
     QDoubleSpinBox, QMessageBox
 )
-from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication, QSize, QPoint
+from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication, QSize, QPoint, QTimer
 from PySide6.QtGui import QAction, QFont, QColor, QPalette, QScreen
 
 
@@ -38,8 +38,8 @@ class Ui_MainWindow(object):
         self.centralwidget = QWidget(MainWindow)
         MainWindow.setCentralWidget(self.centralwidget)  # Set central widget immediately
         self.main_layout = QVBoxLayout(self.centralwidget)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)  # Remove all margins
-        self.main_layout.setSpacing(0)  # Remove spacing between widgets
+        self.main_layout.setContentsMargins(14, 14, 14, 14)  # Add margins around the entire content
+        self.main_layout.setSpacing(14)  # Add spacing between main elements
         
         # Main Horizontal Splitter
         self.main_splitter = QSplitter(Qt.Horizontal)
@@ -48,40 +48,42 @@ class Ui_MainWindow(object):
         self.left_scroll = QScrollArea()
         self.left_scroll.setWidgetResizable(True)
         self.left_scroll.setObjectName("leftPanel")
-        
-        self.left_scroll.setMinimumWidth(250)  # Reduced from default
-        self.left_scroll.setMaximumWidth(250)  # Added maximum width
-        self.left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        
-        # Create widget for scroll area
+        self.left_scroll.setMinimumWidth(270)  # Reduced from default
+
+        # Create widget for scroll area first
         self.left_widget = QWidget()
         self.left_widget.setObjectName("leftWidget")
         self.left_layout = QVBoxLayout(self.left_widget)
-        self.left_layout.setContentsMargins(14, 14, 14, 14)
-        self.left_layout.setSpacing(24)  # Increased spacing between groups
+        self.left_layout.setContentsMargins(10, 10, 10, 10)  # Reduced margins
+        self.left_layout.setSpacing(10)  # Reduced spacing
+
+        # Set the widget before setting scroll bar policies
+        self.left_scroll.setWidget(self.left_widget)
+        
+        # Now set scroll bar policies
+        self.left_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # Timer to hide scrollbars after scrolling stops on the left
+        self.scroll_timer_left = QTimer()
+        self.scroll_timer_left.setInterval(2000)  # 2 seconds
+        self.scroll_timer_left.timeout.connect(self.on_scroll_stop_left)
+
+        # Connect scroll events to timer for the left scroll
+        self.left_scroll.verticalScrollBar().valueChanged.connect(lambda: (self.on_scroll_left(), self.scroll_timer_left.start()))
+        self.left_scroll.horizontalScrollBar().valueChanged.connect(lambda: (self.on_scroll_left(), self.scroll_timer_left.start()))
 
         # Theme Selector
         self.theme_selector = QComboBox()
             
         self.theme_selector.addItems(["Light", "Dark"])
         self.theme_selector.setMinimumWidth(80)
-        self.theme_selector.setMaximumWidth(80)
+        self.theme_selector.setMaximumWidth(80)        
         self.theme_selector.setCurrentIndex(0)
         self.left_layout.addWidget(self.theme_selector)
 
         # Visualization Controls Group
         self.viz_controls_group = QGroupBox("Visualization Controls")
-        self.viz_controls_group.setStyleSheet("""
-            QGroupBox {
-                margin-top: 1em;
-                padding-top: 0.5em;
-            }       
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top center;
-                margin-top: 0.5em;
-            }
-        """)
         self.viz_controls_layout = QVBoxLayout(self.viz_controls_group)
         self.viz_controls_layout.setSpacing(8)
         self.viz_controls_layout.setContentsMargins(10, 12, 10, 12)
@@ -123,24 +125,12 @@ class Ui_MainWindow(object):
         # Add all sections to main layout
         self.viz_controls_layout.addLayout(self.plot_form_layout)
         
-        
         # Add visualization controls to left panel
         self.left_layout.addWidget(self.viz_controls_group)
-        self.left_layout.addStretch(1)  # Add stretch to push everything up
+        self.left_layout.addStretch(0)  # Adjusted stretch factor
         
         # Price Settings Group
         self.price_settings_group = QGroupBox("Price Settings")
-        self.price_settings_group.setStyleSheet("""
-            QGroupBox {
-                margin-top: 2em;
-                padding-top: 0.5em;
-            }       
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top center;
-                margin-top: 0.5em;
-            }
-        """)
         self.price_settings_layout = QFormLayout(self.price_settings_group)
         self.price_settings_layout.setSpacing(8)  # Spacing between elements within groups
         self.price_settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
@@ -252,22 +242,10 @@ class Ui_MainWindow(object):
         
         # Volume Settings Group
         self.volume_settings_group = QGroupBox("Volume Settings")
-        self.volume_settings_group.setStyleSheet("""
-            QGroupBox {
-                margin-top: 2em;
-                padding-top: 0.5em;
-            }       
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top center;
-                margin-top: 0.5em;
-            }
-        """)
         self.volume_settings_layout = QFormLayout(self.volume_settings_group)
-        self.volume_settings_layout.setSpacing(8)  # Spacing between elements within groups
-        self.volume_settings_layout.setContentsMargins(10, 12, 10, 12)  # Increased internal padding
-        self.volume_settings_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        
+        self.volume_settings_layout.setSpacing(12)
+        self.volume_settings_layout.setContentsMargins(1, 12, 1, 12)
+
         # Volume Presets
         self.volume_preset_combo = QComboBox()
         self.volume_preset_combo.addItems([
@@ -364,9 +342,6 @@ class Ui_MainWindow(object):
         self.left_layout.addWidget(self.volume_settings_group)
         self.left_layout.addStretch()
         
-        # Set the widget for scroll area
-        self.left_scroll.setWidget(self.left_widget)
-        
         # Add scroll area to main splitter
         self.main_splitter.addWidget(self.left_scroll)
         
@@ -378,33 +353,41 @@ class Ui_MainWindow(object):
         # Plot Area
         self.plot_area = QFrame()
         self.plot_area.setFrameStyle(QFrame.StyledPanel)
-        self.plot_area.setMinimumSize(QSize(400, 300))
+        self.plot_area.setMinimumSize(QSize(300, 300))
         
         # Add plot area to center panel
         self.center_layout.addWidget(self.plot_area)
+        
+        # Add center panel to main splitter
+        self.main_splitter.addWidget(self.center_panel)
         
         # Right Panel with Scroll Area
         self.right_scroll = QScrollArea()
         self.right_scroll.setWidgetResizable(True)
         self.right_scroll.setObjectName("rightPanel")
-    
-        self.right_scroll.setMinimumWidth(200)  # Reduced from default
-        self.right_scroll.setMaximumWidth(300)  # Added maximum width
-        self.right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        
-        # Create widget for scroll area
+        self.right_scroll.setMinimumWidth(200)
+        self.right_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # Right Panel widget with scroll area
         self.right_panel = QWidget()
+        self.right_panel.setObjectName("right_panel")
         self.right_layout = QVBoxLayout(self.right_panel)
-        self.right_layout.setContentsMargins(14, 14, 14, 14)
-        self.right_layout.setSpacing(24)  # Increased spacing between groups
+        self.right_layout.setContentsMargins(10, 10, 10, 10)
+        self.right_layout.setSpacing(10)  # Increased spacing between groups
 
         # Infinite Data Run Group
-        self.exec_group = QGroupBox("Infinite Data Run")
+        self.infinite_data_group = QGroupBox("Infinite Data Run")
+        self.infinite_data_layout = QVBoxLayout(self.infinite_data_group)
+        self.infinite_data_layout.setSpacing(12)  # Spacing between elements within groups
+        self.infinite_data_layout.setContentsMargins(1, 10, 1, 10)  # Increased internal padding
         
-        self.exec_layout = QVBoxLayout(self.exec_group)
-        self.exec_layout.setSpacing(10)  # Spacing between elements within groups
-        self.exec_layout.setContentsMargins(1, 1, 1, 12)  # Increased internal padding
-        
+        self.initial_data_points_label = QLabel("Initial Data Points")
+        self.initial_data_points_label.setAlignment(Qt.AlignCenter)
+        self.infinite_initial_amount = QDoubleSpinBox()
+        self.infinite_initial_amount.setDecimals(0)
+        self.infinite_initial_amount.setValue(100000)
+        self.infinite_initial_amount.setRange(1000, 1000000000) 
         self.start_btn = QPushButton("Start")
         self.start_btn.setMaximumWidth(120)
         self.pause_btn = QPushButton("Pause")
@@ -414,19 +397,21 @@ class Ui_MainWindow(object):
         self.reset_btn = QPushButton("Reset")
         self.reset_btn.setMaximumWidth(120)
         
-        self.exec_layout.setAlignment(Qt.AlignCenter)
+        self.infinite_data_layout.setAlignment(Qt.AlignCenter)  
         
-        self.exec_layout.addWidget(self.start_btn)
-        self.exec_layout.addWidget(self.pause_btn)
-        self.exec_layout.addWidget(self.stop_btn)
-        self.exec_layout.addWidget(self.reset_btn)
+        self.infinite_data_layout.addWidget(self.initial_data_points_label)
+        self.infinite_data_layout.addWidget(self.infinite_initial_amount)
+        self.infinite_data_layout.addWidget(self.start_btn)
+        self.infinite_data_layout.addWidget(self.pause_btn)
+        self.infinite_data_layout.addWidget(self.stop_btn)
+        self.infinite_data_layout.addWidget(self.reset_btn)
 
         # Live streaming Group
         self.live_streaming_group = QGroupBox("Live Streaming")
         
         self.live_streaming_group_layout = QVBoxLayout(self.live_streaming_group)
-        self.live_streaming_group_layout.setSpacing(10)  # Spacing between elements within groups
-        self.live_streaming_group_layout.setContentsMargins(1, 1, 1, 12)  # Increased internal padding
+        self.live_streaming_group_layout.setSpacing(12)  # Spacing between elements within groups
+        self.live_streaming_group_layout.setContentsMargins(1, 12, 1, 12)  # Increased internal padding
         
         self.start_data_stream_btn = QPushButton("Start Data Stream")
         self.start_data_stream_btn.setMaximumWidth(150)
@@ -441,31 +426,36 @@ class Ui_MainWindow(object):
         # Center button alignment
         self.live_streaming_group_layout.setAlignment(Qt.AlignCenter)
 
-        # Data Controls Group
+        # Static Data Group
         self.data_group = QGroupBox("Static Data")
 
         self.data_layout = QVBoxLayout(self.data_group)
-        self.data_layout.setSpacing(10)  # Spacing between elements within groups
-        self.data_layout.setContentsMargins(1, 1, 1, 12 )  # Increased internal padding
+        self.data_layout.setSpacing(12)  # Spacing between elements within groups
+        self.data_layout.setContentsMargins(1, 12, 1, 12 )  # Increased internal padding
         
         self.load_data_btn = QPushButton("Load Data")
         self.load_data_btn.setMaximumWidth(150)
         self.generate_data_btn = QPushButton("Generate Data")
         self.generate_data_btn.setMaximumWidth(150)
+        self.data_points_label = QLabel("Data Points")
+        self.data_points_label.setAlignment(Qt.AlignCenter)
+        self.initial_amount = QDoubleSpinBox()
+        self.initial_amount.setDecimals(0)
+        self.initial_amount.setValue(100000)
+        self.initial_amount.setRange(10000, 1000000000) 
         self.save_data_btn = QPushButton("Save Data")
         self.save_data_btn.setMaximumWidth(150)
+
         self.data_layout.addWidget(self.load_data_btn)
         self.data_layout.addWidget(self.generate_data_btn)
+        self.data_layout.addWidget(self.data_points_label)
+        self.data_layout.addWidget(self.initial_amount)
         self.data_layout.addWidget(self.save_data_btn)
 
         self.data_layout.setAlignment(Qt.AlignCenter)
 
-        self.data_layout.addWidget(self.load_data_btn)
-        self.data_layout.addWidget(self.generate_data_btn)
-        self.data_layout.addWidget(self.save_data_btn)
-        
         # Add all groups to right panel
-        self.right_layout.addWidget(self.exec_group)
+        self.right_layout.addWidget(self.infinite_data_group)
         self.right_layout.addWidget(self.live_streaming_group)
         self.right_layout.addWidget(self.data_group)
         self.right_layout.addStretch()
@@ -473,10 +463,18 @@ class Ui_MainWindow(object):
         # Set the widget for scroll area
         self.right_scroll.setWidget(self.right_panel)
         
-        # Add panels to main splitter
-        self.main_splitter.addWidget(self.center_panel)
+        # Add right scroll box to the main splitter
         self.main_splitter.addWidget(self.right_scroll)
-        
+
+        # Timer to hide scrollbars after scrolling stops on the right
+        self.scroll_timer_right = QTimer()
+        self.scroll_timer_right.setInterval(2000)  # 2 seconds
+        self.scroll_timer_right.timeout.connect(self.on_scroll_stop_right)
+
+        # Connect scroll events to timer for the right scroll
+        self.right_scroll.verticalScrollBar().valueChanged.connect(lambda: (self.on_scroll_right(), self.scroll_timer_right.start()))
+        self.right_scroll.horizontalScrollBar().valueChanged.connect(lambda: (self.on_scroll_right(), self.scroll_timer_right.start()))
+
         # Set initial sizes for main splitter (20% left, 60% center, 20% right)
         total_width = MainWindow.width()
         self.main_splitter.setSizes([
@@ -897,6 +895,22 @@ class Ui_MainWindow(object):
             self.start_data_stream_btn.setText("Connected")
             # Enable the stop button
             self.stop_data_stream_btn.setEnabled(True)
+
+    def on_scroll_right(self):
+        self.right_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+    def on_scroll_stop_right(self):
+        self.right_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+    def on_scroll_left(self):
+        self.left_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+    def on_scroll_stop_left(self):
+        self.left_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
 
 class StreamConnectionDialog(QDialog):

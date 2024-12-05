@@ -12,6 +12,10 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.settings = Settings()
+        self.app = QApplication.instance()
+        
+        # Apply spinbox styling
+        self.setup_spinbox_styling()
         
         # Set up theme selector
         self.setup_theme_selector()
@@ -21,8 +25,8 @@ class MainWindow(QMainWindow):
         self.ui.save_data_btn.clicked.connect(self.show_save_dialog)
         
         # Apply initial theme after UI setup
-        self.apply_theme(self.settings.get_theme())
-        
+        self.apply_theme(self.settings.get_theme() == 'dark')
+
     def setup_theme_selector(self):
         """
         Initializes the theme selector combobox, sets its initial state,
@@ -42,111 +46,272 @@ class MainWindow(QMainWindow):
         """
         new_theme = 'light' if index == 0 else 'dark'
         self.settings.set_theme(new_theme)
-        self.apply_theme(new_theme)
+        self.apply_theme(index == 1)
         
-    def apply_theme(self, theme):
-        """
-        Applies the selected theme to the entire application by setting
-        a custom palette based on the theme.
-        """
-        app = QApplication.instance()
-        palette = QPalette()
-        groupbox_style = ""
-
-        if theme == 'dark':
-            # -------------------
-            # Dark Theme Palette
-            # -------------------
+    def apply_theme(self, is_dark_theme=False):
+        """Apply dark or light theme to the application"""
+        if is_dark_theme:
+            # Dark theme colors
+            palette = QPalette()
             palette.setColor(QPalette.Window, QColor(45, 45, 45))
-            palette.setColor(QPalette.WindowText, QColor(200, 200, 200))
+            palette.setColor(QPalette.WindowText, QColor(255, 255, 255))
             palette.setColor(QPalette.Base, QColor(30, 30, 30))
-            palette.setColor(QPalette.AlternateBase, QColor(45, 45, 45))
-            palette.setColor(QPalette.ToolTipBase, QColor(75, 75, 75))
-            palette.setColor(QPalette.ToolTipText, QColor(200, 200, 200))
-            palette.setColor(QPalette.Text, QColor(200, 200, 200))
-            palette.setColor(QPalette.Button, QColor(55, 55, 55))
-            palette.setColor(QPalette.ButtonText, QColor(200, 200, 200))
-            palette.setColor(QPalette.BrightText, Qt.red)
+            palette.setColor(QPalette.AlternateBase, QColor(35, 35, 35))
+            palette.setColor(QPalette.Text, QColor(255, 255, 255))
+            palette.setColor(QPalette.Button, QColor(53, 53, 53))
+            palette.setColor(QPalette.ButtonText, QColor(255, 255, 255))
             palette.setColor(QPalette.Link, QColor(100, 149, 237))
             palette.setColor(QPalette.Highlight, QColor(100, 149, 237))
             palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
             
-            # Dark theme groupbox style
+            # Dark theme styles
             groupbox_style = """
-                QGroupBox {
-                    color: #CCCCCC; /* Light gray text for dark mode */
-                    margin-top: 2em;
-                    padding-top: 0.5em;
+                QLabel, QLabel * {
+                    border: none;
+                    background: transparent;
                 }
-                QGroupBox::title {
+                *[class="QLabel"] {
+                    border: none;
+                    background: transparent;
+                }
+                QFormLayout QLabel {
+                    border: none;
+                    background: transparent;
+                }
+                QGroupBox { 
+                    font-weight: bold;
+                    margin-top: 10px;
+                    background-color: #2d2d2d;
+                    border: 1px solid #3d3d3d;
+                    border-radius: 6px;
+                    padding: 15px;
+                }
+                QGroupBox::title { 
                     subcontrol-origin: margin;
-                    subcontrol-position: top center;
-                    margin-top: 0.5em;
+                    subcontrol-position: top left;
+                    background-color: transparent;
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    padding-top: 0px;
+                    padding-bottom: 0px;
+                    margin-top: px;
+                    color: #CCCCCC;
+                }
+                QFrame, QScrollArea {
+                    border: 1px solid #3d3d3d;
+                    border-radius: 6px;
+                    background: transparent;
+                }
+                QScrollArea > QWidget > QWidget {
+                    background: transparent;
+                    border: none;
+                }
+                QScrollBar:vertical {
+                    border: none;
+                    background: transparent;
+                    width: 4px;
+                }
+                QScrollBar::handle:vertical {
+                    background: #66666600;
+                    border-radius: 2px;
+                }
+                QScrollBar::handle:vertical:hover {
+                    background: #666666;
+                }
+                QScrollBar::handle:vertical:pressed {
+                    background: #666666;
+                }
+                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                    height: 0px;
+                }
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                    background: none;
+                }
+                QTabWidget::pane {
+                    border: 1px solid #3d3d3d;
+                    border-radius: 6px;
+                    background: transparent;
+                }
+                QTabWidget::tab-pane {
+                    border: none;
+                    border-radius: 6px;
+                    background: transparent;
+                }
+                QWidget#leftWidget, QWidget#right_panel {
+                    background: transparent;
+                    border: none;
                 }
             """
         else:
-            # -------------------
-            # Light Theme Palette
-            # -------------------
-            palette.setColor(QPalette.Window, QColor(250, 250, 250))  # Softer white
-            palette.setColor(QPalette.WindowText, QColor(30, 30, 30))  # Darker gray for better contrast
-            palette.setColor(QPalette.Base, QColor(255, 255, 255))  # Pure white
-            palette.setColor(QPalette.AlternateBase, QColor(245, 245, 245))  # Very light gray
-            palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 220))  # Soft yellow
-            palette.setColor(QPalette.ToolTipText, QColor(0, 0, 0))  # Black text
-            palette.setColor(QPalette.Text, QColor(50, 50, 50))  # Medium gray for inputs
-            palette.setColor(QPalette.Button, QColor(235, 235, 235))  # Light gray for buttons
-            palette.setColor(QPalette.ButtonText, QColor(30, 30, 30))  # Darker gray for button text
-            palette.setColor(QPalette.BrightText, Qt.red)  # Keep red for alerts
+            # Light theme colors
+            palette = QPalette()
+            palette.setColor(QPalette.Window, QColor(240, 240, 240))
+            palette.setColor(QPalette.WindowText, QColor(0, 0, 0))
+            palette.setColor(QPalette.Base, QColor(255, 255, 255))
+            palette.setColor(QPalette.AlternateBase, QColor(245, 245, 245))
+            palette.setColor(QPalette.Text, QColor(0, 0, 0))
+            palette.setColor(QPalette.Button, QColor(240, 240, 240))
+            palette.setColor(QPalette.ButtonText, QColor(0, 0, 0))
             palette.setColor(QPalette.Link, QColor(0, 102, 204))  # Soft blue for links
             palette.setColor(QPalette.Highlight, QColor(51, 153, 255))  # Light blue
             palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))  # White text on highlight
             
-            # Light theme groupbox style
+            # Light theme styles
             groupbox_style = """
-                QGroupBox {
-                    color: #000000; /* Black text for light mode */
-                    margin-top: 2em;
-                    padding-top: 0.5em;
+                QLabel, QLabel * {
+                    border: none;
+                    background: transparent;
                 }
-                QGroupBox::title {
+                *[class="QLabel"] {
+                    border: none;
+                    background: transparent;
+                }
+                QFormLayout QLabel {
+                    border: none;
+                    background: transparent;
+                }
+                QGroupBox { 
+                    font-weight: bold;
+                    margin-top: 10px;
+                    background-color: #f0f0f0;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 6px;
+                    padding: 15px;
+                }
+                QGroupBox::title { 
                     subcontrol-origin: margin;
-                    subcontrol-position: top center;
-                    margin-top: 0.5em;
+                    subcontrol-position: top left;
+                    background-color: transparent;
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    padding-top: 0px;
+                    padding-bottom: 0px;
+                    margin-top: 0px;
+                    margin-bottom: 0px;
+                    color: #000000;
+                }
+                QFrame, QScrollArea {
+                    border: 1px solid #CCCCCC;
+                    border-radius: 6px;
+                    background: transparent;
+                }
+                QScrollArea > QWidget > QWidget {
+                    background: transparent;
+                    border: none;
+                }
+                QScrollBar:vertical {
+                    border: none;
+                    background: transparent;
+                    width: 4px;
+                }
+                QScrollBar::handle:vertical {
+                    background: #CCCCCC00;
+                    border-radius: 2px;
+                }
+                QScrollBar::handle:vertical:hover {
+                    background: #CCCCCC;
+                }
+                QScrollBar::handle:vertical:pressed {
+                    background: #CCCCCC;
+                }
+                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                    height: 0px;
+                }
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                    background: none;
+                }
+                QTabWidget::pane {
+                    border: 1px solid #CCCCCC;
+                    border-radius: 6px;
+                    background: transparent;
+                }
+                QTabWidget::tab-pane {
+                    border: none;
+                    border-radius: 6px;
+                    background: transparent;
+                }
+                QWidget#leftWidget, QWidget#right_panel {
+                    background: transparent;
+                    border: none;
                 }
             """
+
+        # Apply palette and styles
+        self.app.setPalette(palette)
         
-        # Apply the customized palette to the application
-        app.setPalette(palette)
+        # Apply styles to group boxes
+        group_boxes = [
+            self.ui.infinite_data_group,
+            self.ui.live_streaming_group,
+            self.ui.data_group,
+            self.ui.price_settings_group,
+            self.ui.volume_settings_group,
+            self.ui.viz_controls_group
+        ]
+        for group_box in group_boxes:
+            group_box.setPalette(palette)
+            group_box.setStyleSheet(groupbox_style)
 
-        # Apply the palette to price settings
-        self.ui.initial_price.setPalette(palette)
-        self.ui.volatility.setPalette(palette)
-        self.ui.drift.setPalette(palette)
-        self.ui.mean_reversion.setPalette(palette)
-        self.ui.gap_probability.setPalette(palette)
-        self.ui.gap_size.setPalette(palette)
-
-        # Apply the palette to volume settings
-        self.ui.base_volume.setPalette(palette)
-        self.ui.volume_volatility.setPalette(palette)
-        self.ui.volume_trend.setPalette(palette)
-        self.ui.spike_probability.setPalette(palette)
-        self.ui.spike_multiplier.setPalette(palette)
+        # Apply styles to containers
+        self.ui.plot_area.setStyleSheet(groupbox_style)
+        self.ui.left_scroll.setStyleSheet(groupbox_style)
+        self.ui.right_scroll.setStyleSheet(groupbox_style)
+        self.ui.editor_tab_widget.setStyleSheet(groupbox_style)
         
-        # Apply the palette to right-hand panel widgets
-        self.ui.data_group.setPalette(palette)
-        self.ui.exec_group.setPalette(palette)
-        self.ui.live_streaming_group.setPalette(palette)
-        self.ui.right_scroll.setPalette(palette)
+        # Apply styles to spinboxes
+        spinboxes = [
+            self.ui.initial_price,
+            self.ui.volatility,
+            self.ui.drift,
+            self.ui.mean_reversion,
+            self.ui.gap_probability,
+            self.ui.gap_size,
+            self.ui.base_volume,
+            self.ui.volume_volatility,
+            self.ui.volume_trend,
+            self.ui.spike_probability,
+            self.ui.spike_multiplier,
+            self.ui.initial_amount,
+            self.ui.infinite_initial_amount
+        ]
+        for spinbox in spinboxes:
+            spinbox.setStyleSheet(groupbox_style)   
+    # Apply left alignment with offset to numbers inside Spinbox
+    def setup_spinbox_styling(self):
+        spinboxes = [
+            # Price settings spinboxes
+            self.ui.initial_price,
+            self.ui.volatility,
+            self.ui.drift,
+            self.ui.mean_reversion,
+            self.ui.gap_probability,
+            self.ui.gap_size,
+            # Volume settings spinboxes
+            self.ui.base_volume,
+            self.ui.volume_volatility,
+            self.ui.volume_trend,
+            self.ui.spike_probability,
+            self.ui.spike_multiplier,
+            # Data amount spinboxes
+            self.ui.initial_amount,
+            self.ui.infinite_initial_amount
+        ]
 
-        # Apply the stylesheet to groupbox titles
-        self.ui.price_settings_group.setStyleSheet(groupbox_style)
-        self.ui.volume_settings_group.setStyleSheet(groupbox_style)
-        self.ui.viz_controls_group.setStyleSheet(groupbox_style)
-        self.ui.data_group.setStyleSheet(groupbox_style)
-        self.ui.exec_group.setStyleSheet(groupbox_style)
-        self.ui.live_streaming_group.setStyleSheet(groupbox_style)
+        spinbox_style = """
+            QSpinBox, QDoubleSpinBox {
+                padding-left: 5px;
+                height: 24px;
+            }
+        """
+
+        for spinbox in spinboxes:
+            # Set text alignment and margins
+            spinbox.lineEdit().setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            spinbox.lineEdit().setTextMargins(5, 0, 0, 0)
+            # Set fixed height
+            spinbox.setMinimumHeight(24)
+            spinbox.setMaximumHeight(24)
+            spinbox.setStyleSheet(spinbox_style)
 
     def show_load_dialog(self):
         """Opens a file dialog for loading data files"""
